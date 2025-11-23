@@ -1,0 +1,233 @@
+{
+	"name": "delta load",
+	"properties": {
+		"activities": [
+			{
+				"name": "newwatermark",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select max(modified_date)as newwatermark from dbo.sales",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "source_deltaload_sourcesqldb",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "oldwatermark",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "sink_deltaload_sinksqldb",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "sourcesqldbToAdls",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "newwatermark",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "oldwatermark",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "select * from dbo.sales where modified_date > '@{activity('oldwatermark').output.firstRow.oldwatermark}' and modified_date <= '@{activity('newwatermark').output.firstRow.newwatermark}'",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "source_deltaload_copy1_sourcesqldb",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "sink_deltaload_copy1_kiranstorage111",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "updatewatermark",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "sourcesqldbToAdls",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[updatewatermark]",
+					"storedProcedureParameters": {
+						"newwatermark": {
+							"value": {
+								"value": "@{activity('newwatermark').output.firstRow.newwatermark}",
+								"type": "Expression"
+							},
+							"type": "Datetime"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_sinksqldb",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "adlssinkTOsinksqldb",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "updatewatermark",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"writeBehavior": "upsert",
+						"upsertSettings": {
+							"useTempDB": true,
+							"keys": [
+								"sales_id"
+							]
+						},
+						"sqlWriterUseTableLock": false,
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "sink_deltaload_copy1_kiranstorage111",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "sink_deltaload_copy2_sinksqldb",
+						"type": "DatasetReference"
+					}
+				]
+			}
+		],
+		"folder": {
+			"name": "delta_loads"
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-11-15T07:25:34Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

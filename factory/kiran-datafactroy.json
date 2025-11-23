@@ -1,0 +1,9 @@
+{
+	"name": "kiran-datafactroy",
+	"location": "centralindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "2c5364bd-fbc8-488b-a89c-145ad7d92ad6",
+		"tenantId": "d1159964-e8bd-4979-8c3c-09ea98581cfa"
+	}
+}

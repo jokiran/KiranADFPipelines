@@ -1,0 +1,25 @@
+{
+	"name": "sink_foreachdelta_copy2_sinksqldb",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_sinksqldb",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"schemaname": {
+				"type": "string"
+			},
+			"tablename": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "schemaname",
+			"table": "tablename"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

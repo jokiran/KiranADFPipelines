@@ -1,0 +1,42 @@
+{
+	"name": "sink_foreachdeltaload_copy1_adls",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_kiranadls111",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"foldername": {
+				"type": "string"
+			},
+			"tablename": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().tablename",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().foldername",
+					"type": "Expression"
+				},
+				"fileSystem": {
+					"value": "@concat('output','/' ,formatDateTime(utcNow(),'dd_MM_yyyy'))",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

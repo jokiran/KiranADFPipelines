@@ -1,0 +1,13 @@
+{
+	"name": "newatermark_foreachdelta_sourcesqldb",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_sourcesqldb",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

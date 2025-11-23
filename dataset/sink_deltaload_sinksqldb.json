@@ -1,0 +1,17 @@
+{
+	"name": "sink_deltaload_sinksqldb",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_sinksqldb",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "oldwatermark"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}
